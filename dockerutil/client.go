@@ -32,7 +32,10 @@ func WithClient(ctx context.Context, client Client) context.Context {
 func ExtractClient(ctx context.Context) (Client, error) {
 	client := ctx.Value(clientKey{})
 	if client == nil {
-		client, err := dockerclient.NewClientWithOpts(dockerclient.FromEnv)
+		client, err := dockerclient.NewClientWithOpts(
+			dockerclient.FromEnv,
+			dockerclient.WithAPIVersionNegotiation(), // use daemon's max API (e.g. 1.47) so we don't exceed it
+		)
 		if err != nil {
 			return nil, xerrors.Errorf("new env client: %w", err)
 		}

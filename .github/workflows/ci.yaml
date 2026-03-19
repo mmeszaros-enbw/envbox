@@ -195,7 +195,7 @@ jobs:
         run: exit 0
 
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@0.29.0
+        uses: aquasecurity/trivy-action@0.34.2
         with:
           image-ref: envbox:latest
           format: sarif
@@ -270,6 +270,6 @@ jobs:
       - name: Tag and push envbox-preview
         run: |
           VERSION=$(./scripts/version.sh)-dev-$(git rev-parse --short HEAD)
-          BASE=ghcr.io/coder/envbox-preview
+          BASE=ghcr.io/${{ github.repository_owner }}/envbox-preview
           docker tag envbox "${BASE}:${VERSION}"
           docker push "${BASE}:${VERSION}"

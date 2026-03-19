@@ -2,11 +2,11 @@
 FROM ubuntu:jammy
 
 ARG TARGETARCH
-# This should be updated in the Makefile whenever the version is changed. 
+# This should be updated in the Makefile whenever the version is changed.
 # We don't hardcode it here because we have to be able to build both
 # amd and arm
 ARG SYSBOX_SHA
-ARG SYSBOX_VERSION="0.6.7"
+ARG SYSBOX_VERSION="0.7.0"
 ARG SYSBOX_DEB="sysbox-ce_$SYSBOX_VERSION-0.linux_$TARGETARCH.deb"
 
 # Copy configuration files to appropriate locations
@@ -20,9 +20,9 @@ LABEL \
 
 # Basic utilities
 ARG DEBIAN_FRONTEND=noninteractive
-# Pin docker to avoid any breaking API changes between the Go client and 
-# the server.
-ARG DOCKER_VERSION="5:27.3.1-1~ubuntu.22.04~jammy"
+# Pin docker to avoid any breaking API changes between the Go client and
+# the server. Use latest LTS/stable from https://download.docker.com/linux/ubuntu/dists/jammy/pool/stable/
+ARG DOCKER_VERSION="5:29.2.1-1~ubuntu.22.04~jammy"
 #   Ignore other repositories, as some require HTTPS
 RUN apt-get update --quiet --option Dir::Etc::SourceParts="" && \
     apt-get upgrade -y && \
@@ -33,7 +33,7 @@ RUN apt-get update --quiet --option Dir::Etc::SourceParts="" && \
       ca-certificates \
       curl \
       dialog \
-      fuse \
+      fuse3 \
       iproute2 \
       jq \
       kmod \
