@@ -222,22 +222,60 @@ func dockerCmd() *cobra.Command {
 			}
 
 			go func() {
-				select {
-				// Start sysbox-mgr and sysbox-fs in order to run
-				// sysbox containers.
-				case err := <-background.New(ctx, log, "sysbox-mgr", sysboxArgs...).Run():
+				sysboxFS := background.New(ctx, log, "sysbox-fs")
+				err := sysboxFS.Start()
+				if err != nil {
 					if ctx.Err() == nil {
 						blog.Info(sysboxErrMsg)
 						//nolint
-						log.Critical(ctx, "sysbox-mgr exited", slog.Error(err))
+						log.Critical(ctx, "failed to start sysbox-fs", slog.Error(err))
 						panic(err)
 					}
-				case err := <-background.New(ctx, log, "sysbox-fs").Run():
+					return
+				}
+
+				// sysbox-mgr requires sysbox-fs and its socket to be ready.
+				err = sysboxutil.WaitForFS(ctx)
+				if err != nil {
 					if ctx.Err() == nil {
 						blog.Info(sysboxErrMsg)
 						//nolint
-						log.Critical(ctx, "sysbox-fs exited", slog.Error(err))
+						log.Critical(ctx, "wait for sysbox-fs socket", slog.Error(err))
 						panic(err)
+					}
+					return
+				}
+
+				sysboxMgr := background.New(ctx, log, "sysbox-mgr", sysboxArgs...)
+				err = sysboxMgr.Start()
+				if err != nil {
+					if ctx.Err() == nil {
+						blog.Info(sysboxErrMsg)
+						//nolint
+						log.Critical(ctx, "failed to start sysbox-mgr", slog.Error(err))
+						panic(err)
+					}
+					return
+				}
+
+				for {
+					select {
+					case err := <-sysboxMgr.Wait():
+						if ctx.Err() == nil {
+							blog.Info(sysboxErrMsg)
+							//nolint
+							log.Critical(ctx, "sysbox-mgr exited", slog.Error(err))
+							panic(err)
+						}
+						return
+					case err := <-sysboxFS.Wait():
+						if ctx.Err() == nil {
+							blog.Info(sysboxErrMsg)
+							//nolint
+							log.Critical(ctx, "sysbox-fs exited", slog.Error(err))
+							panic(err)
+						}
+						return
 					}
 				}
 			}()
